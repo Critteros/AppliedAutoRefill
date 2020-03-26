@@ -81,6 +81,7 @@ Items,NumberOfItems = getStoredItems(dummySystem)
 
 for x,y in pairs(Items) do print(x,y["Name"],y["ID"],y["Damage"],y["Amount"]) end
 print(NumberOfItems)
+print("Hello World")
 
 
 
