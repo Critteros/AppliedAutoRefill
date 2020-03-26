@@ -50,20 +50,25 @@ end
 local function getStoredItems(NetworkObject)
 	
 	local AppliedData = NetworkObject.getItemsInNetwork()
-	local Items = {}
-	local Item = {}
+	local currItems = {}
+	
 	local NumberOfItems = AppliedData["n"]
 
 	if NumberOfItems == 0 then error("Dummy network has no Items") end
 	
 	for i=1,NumberOfItems,1 do
 		
-		Item["Name"] = AppliedData[i]["label"]
-		Item["ID"] = AppliedData[i]["name"]
-		Item["Damage"] = AppliedData[i]["maxDamage"]
-		Item["Amount"] = AppliedData[i]["size"]
+		local Name = AppliedData[i]["label"]
+		local ID = AppliedData[i]["name"]
+		local Damage = AppliedData[i]["maxDamage"]
+		local Amount = AppliedData[i]["size"]
 
-		table.insert(Items, deepcopy(Item))
+		table.insert(currItems,{
+				Name = Name,
+				ID = ID,
+				Damage = Damage,
+				Amount = Amount
+			})
 		
 		
 
@@ -76,6 +81,7 @@ Items,NumberOfItems = getStoredItems(dummySystem)
 
 for x,y in pairs(Items) do print(x,y["Name"],y["ID"],y["Damage"],y["Amount"]) end
 print(NumberOfItems)
+
 
 
 
