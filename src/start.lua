@@ -1,4 +1,4 @@
--- Applied system auto reffiler by Critteros (v.1)
+-- Applied system auto reffiler by Critteros (v.1.5)
 
 -----Constants------
 
