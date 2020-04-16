@@ -31,9 +31,11 @@ local mainSystem = component.proxy(mainSystemAdress) --Creating a reference obje
 local function main()
     os.execute("cls")
     print("Starting...\n")
+    print("------------------------------------")
+    
     
     while true do
-        print("------------------------------------")
+        gpu.setForeground(0xFFFFFF) -- White
         local threadList = {}
         local itemList = GetStoredItems()
         local queque = CreateQueque(itemList)
@@ -61,9 +63,15 @@ local function main()
         
             end
             thread.waitForAll(threadList)
-            
+            print("------------------------------------")
+
+        else
+            gpu.setForeground(0x808080) -- Gray
+            print("No action needed, skipping")
+            print("------------------------------------")
 
         end
+        
         os.sleep(5)
     end
 
@@ -212,39 +220,6 @@ function GetCpu()
     end
 end
 -----------------------------------------------------
-
-
-----Debug----
-function DebugPrint(Object)
-    if type(Object) ~= 'table' then return nil end
-    
-    local function DebugShow(Data)
-        for key,value in pairs(Data) do
-            if (key ~= nil) and (value ~= nil) then
-               
-                io.write(tostring(key)) 
-                io.write(": ")
-                io.write(tostring(value))
-                io.write(" ")
-
-            end
-        end
-    end
-
-    for key,value in pairs(Object) do 
-        if type(Object[key]) == 'table' then
-           
-           io.write(tostring(key), " (Nested)\t")
-           DebugShow(value)
-           io.write("\n")
-        else
-            print(key,value)
-        end
-
-    end
-
-end
--------------
 
 --------Runner--------
 main()
