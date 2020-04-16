@@ -14,192 +14,237 @@ local craftingConstant = 0.45
 --Names of CPUs that you want to craft with 
 local cpus = {"Eve", "Angela"}
 --------------------
-
---[[
-Structure:
-
-Items = {
-	{Name, ID, Damage, Amount}
-}
+--------------------
 
 
---]]
+--------Code-----------------------------
 
+--------Proxies--------
+local component = require("component") --Importing component library for OC integration
+local thread = require("thread")
+local gpu = component.gpu
+local dummySystem = component.proxy(dummySystemAdress) --Creating a reference object for dummy netowrk
+local mainSystem = component.proxy(mainSystemAdress) --Creating a reference object for main netowrk
+-----------------------
 
-
-
-
+-----Main Function-----
 local function main()
-	local component = require("component")
-	local dummySystem = component.proxy(dummySystemAdress)
-	mainSystem = component.proxy(mainSystemAdress)
-	
-	
-	Items,NumberOfItems = getStoredItemsInDummy(dummySystem)
+    os.execute("cls")
+    print("Starting...\n")
+    
+    while true do
+        print("------------------------------------")
+        local threadList = {}
+        local itemList = GetStoredItems()
+        local queque = CreateQueque(itemList)
+    
+        if queque ~= nil then 
+            for _, value in pairs(queque) do
+            
+                io.write("Network contains ")
+                gpu.setForeground(0xCC24C0) -- Purple-ish
+                io.write(value.Amount)
+                gpu.setForeground(0xFFFFFF) -- White
+                io.write(" items with label ")
+                gpu.setForeground(0x00FF00) -- Green
+                io.write(value.Name, "\n")
+                gpu.setForeground(0xFFFFFF) -- White
+        
+                io.write(" Trying to Craft: ")
+                gpu.setForeground(0xFF0000) -- Red
+                io.write(value.Delta, "\n")
+                gpu.setForeground(0xFFFFFF) -- White
+        
+        
+                table.insert(threadList, thread.create(HandleCrafting,value))
+                os.sleep(2)
+        
+            end
+            thread.waitForAll(threadList)
+            
 
-	--debugShow(Items)
-	local Quque = getItemsInMain(mainSystem,Items)
-	--debugShow(Quque)
-	
-	print("------------------")
-	
-	Control,Quque = Craft(mainSystem,Quque)
-	
-	print("------------------")
-	--debugShow(Quque)
-	--print(Control.isCanceled())
-	--print(Control.isDone())
+        end
+        os.sleep(5)
+    end
+
+   
+    
+end
+
+-----------------------
 
 
-	
-	
+----Crafting Handler----
+function HandleCrafting(entry)
+    
+    local toCraft = entry.Delta
+    local token = entry.Token
+    local noCpu = true
+    local cpuName = nil
+
+    while noCpu do
+        cpuName = GetCpu()
+        if cpuName ~= nil then
+            noCpu = false
+        end
+        os.sleep(2)
+    end
+    --print(cpuName)
+    local status = token.request(toCraft, nil, cpuName)
+
+    
+    while (status.isCanceled() == false) and (status.isDone() == false) do
+        os.sleep(2)
+    end
+
+    if status.isCanceled() == true then
+        gpu.setForeground(0xFF0000) -- Red
+        io.write("  !!!")
+        gpu.setForeground(0xFFFFFF) -- White
+        io.write("Not enough resources to craft: ")
+        gpu.setForeground(0xFF0000) -- Red
+        io.write(entry.Name, "\n")
+        gpu.setForeground(0xFFFFFF) -- White
+   
+    else
+        io.write("   Compleated crafting ")
+        gpu.setForeground(0x00FF00) -- Green
+        io.write(entry.Name, "\n")
+        gpu.setForeground(0xFFFFFF) -- White
+
+    end
+
 
 
 end
+------------------------
 
---Input: Netowrk proxy for applied Output: Containts of that network
-function getStoredItemsInDummy(NetworkObject)
-	
-	local AppliedData = NetworkObject.getItemsInNetwork()
-	local currItems = {}
-	local NumberOfItems = AppliedData["n"]
+----Function to pull items from dummy----
+function GetStoredItems()
+    local AppliedData = dummySystem.getItemsInNetwork() --Downloading data from Dummy Applied System
+    local currList = {} --Placeholder table for items to return
+    local NumberOfItems = AppliedData["n"] --Creating a variable that stors the number of items in dummy network
 
-	if NumberOfItems == 0 then error("Dummy network has no Items") end
+    if NumberOfItems == 0 then error("No Items In Dummy") end --Checks if dummy network has items
+    
+    for i=1, NumberOfItems do
+        table.insert(currList, AppliedData[i])
+    end
 
-	for i=1,NumberOfItems,1 do
-			
-		local Name = AppliedData[i]["label"]
-		local ID = AppliedData[i]["name"]
-		local Damage = AppliedData[i]["damage"]
-		local Amount = AppliedData[i]["size"]
-
-		table.insert(currItems,{
-				ID = ID,
-				Damage = Damage,
-				Name = Name,
-				Amount = Amount
-			})
-			
-			
-	end
-	
-	return currItems, NumberOfItems
-
+    return currList
 end
+-----------------------------------------
 
-function Craft(NetworkObject, Quque)
-	print(type(Quque[1]))
-	if type(Quque[1]) ~= 'nil' then
+------Function that Creates Queque Object------
+function CreateQueque(list)
+    local queque = {}
 
-		local AppliedData = NetworkObject.getCraftables({
-			["label"] = Quque[1]["Name"],
-			["name"] = Quque[1]["ID"],
-			["damage"] = Quque[1]["Damage"]
-		})
-		if AppliedData["n"] == 0 then io.write('No given recipe found for "', Quque["Name"],'". \n' )
-		elseif  AppliedData["n"] == 1 then
-			local currCpu = getCpu(mainSystem)
-			if type(currCpu) == 'string' then
-				local craftingObject = AppliedData[1].request(Quque[1]["ToCraft"],_,currCpu)
-				table.remove(Quque,1)
-				return craftingObject, Quque
-			else error("currCpu type not string") end
+    for _, value in pairs(list) do 
+        
+        
+        local AppliedData = mainSystem.getItemsInNetwork({ ---Pulls Desired Item from main Netowrk
+            label = value.label,
+			name = value.name,
+			damage = value.damage
+        })
 
-		else error("An error has occured when pulling recipes from main netowrk") end
-	end
-
-
-end
-
-
-function getItemsInMain(NetworkObject, Filter)
-	local quque = {}
-
-	for _,value in pairs(Filter) do
-		local AppliedData = NetworkObject.getItemsInNetwork({
-			["label"] = value["Name"],
-			["name"] = value["ID"],
-			["damage"] = value["Damage"]
-		})
-		if AppliedData["n"] == 0 then
-			io.write('Item "',value["Name"],'" not found in main netowrk \n')
-		elseif AppliedData["n"] == 1 then
-			
-			if AppliedData[1]["size"] < value["Amount"] then 
-				local maxCraftsize = value["Amount"] * craftingConstant
-				local delta = value["Amount"] - AppliedData[1]["size"]
+        if (AppliedData["n"] == 1) and AppliedData[1]["isCraftable"] == true then --Checks f item is craftable
+             
+            local token = mainSystem.getCraftables({
+                label = value.label,
+                name = value.name,
+                damage = value.damage
+            })
+           
+            if token["n"] ~= 1 then print(token["n"]) error("An error has occured when pulling token") end --Error check
+            
+            
+            if AppliedData[1]["size"] < value["size"] then              --Calculates amount to craft
+				local maxCraftsize = value["size"] * craftingConstant
+				local delta = value["size"] - AppliedData[1]["size"]
 				if delta > maxCraftsize then delta = maxCraftsize end
 				delta = math.ceil(delta)
 
-				table.insert(quque,{
-					Name = value["Name"],
-					ID = value["ID"],
-					Damage = value["Damage"],
-					ToCraft = delta
-				})
-			end
+                table.insert(queque,{                   --Inserts Item to queque
+                    Name = AppliedData[1].label,
+                    ID = AppliedData[1].name,
+                    Token = token[1],
+                    Delta = delta,
+                    Amount = AppliedData[1].size
+                })
+
+            end
+
+        elseif AppliedData["n"] == 0 then
+            io.write('Item "', value["label"], '" not found in main network but exists in dummy"\n' )
+        
+        elseif (AppliedData["n"] == 1) and AppliedData[1]["isCraftable"] == false then
+            io.write('Item "', AppliedData[1]["label"], '" has no crafting recipe\n' )
+        
+        else print(AppliedData["n"]) error("An error has occured when pulling items from main") end
+
+    end
+    if queque[1] ~= nil then
+        return queque
+    else
+        return nil
+    end
+end
+-----------------------------------------------
+
+-----Function That returns first free Cpu or nil-----
+function GetCpu()
+    local cpuInNetwork = mainSystem.getCpus() --Gets CPUs from main network
+
+    for key, value in pairs(cpuInNetwork) do 
+        if key ~= 'n' then
+            
+            for _, cpuName in pairs(cpus) do
+                
+                if (value["name"] == cpuName) and (value["busy"] == false) then
+                    return value["name"]
+                end
+            
+            end
+
+        else return nil end
+                  
+    end
+end
+-----------------------------------------------------
 
 
-		else error("Error has occured when pulling list from main network") end
-		
-	end
-	return quque
+----Debug----
+function DebugPrint(Object)
+    if type(Object) ~= 'table' then return nil end
+    
+    local function DebugShow(Data)
+        for key,value in pairs(Data) do
+            if (key ~= nil) and (value ~= nil) then
+               
+                io.write(tostring(key)) 
+                io.write(": ")
+                io.write(tostring(value))
+                io.write(" ")
 
+            end
+        end
+    end
+
+    for key,value in pairs(Object) do 
+        if type(Object[key]) == 'table' then
+           
+           io.write(tostring(key), " (Nested)\t")
+           DebugShow(value)
+           io.write("\n")
+        else
+            print(key,value)
+        end
+
+    end
 
 end
+-------------
 
---Returns first avaible cpu form the desired list
-function getCpu(NetworkObject)
-	local cpuInNetwork = NetworkObject.getCpus()
-
-	for key,value in pairs(cpuInNetwork) do
-		if key ~= "n" then
-			for _,cpuName in pairs(cpus) do
-				if (value["name"] == cpuName) and (value["busy"] == false)  then
-					return value["name"]
-			
-				end
-			end
-		
-		else return nil end
-	end
-end
-
-
---Prints out tables for debbuging purpose
-function debugShow(Object)
-	
-	--for x,y in pairs(Object) do print(x,y["Name"],y["ID"],y["Damage"],y["Amount"]) end
-	
-	for key,value in pairs(Object) do
-		if (type(value) == 'nil') or (type(key) == 'nil') then break
-		elseif type(value) == 'table' then 
-			io.write(tostring(key))
-			io.write("\t")
-			io.write(debugShow(value))
-			io.write("\n")
-			
-		else
-			if type(key) == 'string' then
-				io.write(key)
-				io.write(":"," ")
-			elseif type(key) == 'number' then
-				io.write(tostring(key))
-				io.write(" ")
-			end
-			io.write(tostring(value))
-			io.write("\t")
-		end
-	end
-end
-
+--------Runner--------
 main()
-
-
-
-
-
-
-
-
-
