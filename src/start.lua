@@ -38,6 +38,15 @@ local function main()
         gpu.setForeground(0xFFFFFF) -- White
         local threadList = {}
         local itemList = GetStoredItems()
+        
+        while itemList == nil do         
+            gpu.setForeground(0xFF0000) -- Red
+            print("No items in dummy!! ")
+            gpu.setForeground(0xFFFFFF)
+            os.sleep(3)
+            itemList = GetStoredItems()
+        end
+        
         local queque = CreateQueque(itemList)
     
         if queque ~= nil then 
@@ -72,7 +81,7 @@ local function main()
 
         end
         
-        os.sleep(5)
+        os.sleep(8)
     end
 
    
@@ -80,7 +89,6 @@ local function main()
 end
 
 -----------------------
-
 
 ----Crafting Handler----
 function HandleCrafting(entry)
@@ -133,7 +141,7 @@ function GetStoredItems()
     local currList = {} --Placeholder table for items to return
     local NumberOfItems = AppliedData["n"] --Creating a variable that stors the number of items in dummy network
 
-    if NumberOfItems == 0 then error("No Items In Dummy") end --Checks if dummy network has items
+    if NumberOfItems == 0 then return nil end --Checks if dummy network has items
     
     for i=1, NumberOfItems do
         table.insert(currList, AppliedData[i])
