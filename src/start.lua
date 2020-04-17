@@ -9,10 +9,13 @@ local dummySystemAdress = "99a69246-9fcd-42c1-8908-f60abdae86b4"
 local mainSystemAdress = "afab95b0-7e40-4c55-9c08-5724d436c006"
 
 --Constant that defines in % how many items will be requested at once 
-local craftingConstant = 0.45
+local craftingConstant = 45
 
 --Names of CPUs that you want to craft with 
 local cpus = {"Eve", "Angela"}
+
+--Sleep Time--
+local sleep = 8
 --------------------
 --------------------
 
@@ -32,6 +35,7 @@ local function main()
     os.execute("cls")
     print("Starting...\n")
     print("------------------------------------")
+    craftingConstant = craftingConstant / 100
     
     
     while true do
@@ -81,7 +85,7 @@ local function main()
 
         end
         
-        os.sleep(8)
+        os.sleep(sleep)
     end
 
    
