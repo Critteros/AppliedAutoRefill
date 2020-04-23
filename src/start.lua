@@ -1,21 +1,23 @@
--- Applied system auto reffiler by Critteros (v.1.5)
+-- Applied system auto reffiler by Critteros (v.1.7)
 
 -----Constants------
 
 --Adress of ME network with items to auto-refill
-local dummySystemAdress = "99a69246-9fcd-42c1-8908-f60abdae86b4"
+--local dummySystemAdress = "99a69246-9fcd-42c1-8908-f60abdae86b4"
+local dummySystemAdress = "46f8a829-3871-4f16-a0f1-298a286e42ad"
 
 --Adress of main ME network with crafting capabilities
-local mainSystemAdress = "afab95b0-7e40-4c55-9c08-5724d436c006"
+--local mainSystemAdress = "afab95b0-7e40-4c55-9c08-5724d436c006"
+local mainSystemAdress = "0b061661-126e-452a-aee6-cd96a5725d3b"
 
 --Constant that defines in % how many items will be requested at once 
 local craftingConstant = 45
 
 --Names of CPUs that you want to craft with 
-local cpus = {"Eve", "Angela"}
+local cpus = {"Eve" ,"Anthony"}
 
 --Sleep Time--
-local sleep = 8
+local sleep = 2
 --------------------
 --------------------
 
@@ -52,10 +54,16 @@ local function main()
         end
         
         local queque = CreateQueque(itemList)
-    
+        local cpuAvailable = GetCpu()
+        
         if queque ~= nil then 
             for _, value in pairs(queque) do
-            
+                
+                while (#cpuAvailable == 0) do
+                    os.sleep(2)
+                    cpuAvailable = GetCpu()
+                end
+
                 io.write("Network contains ")
                 gpu.setForeground(0xCC24C0) -- Purple-ish
                 io.write(value.Amount)
@@ -67,12 +75,16 @@ local function main()
         
                 io.write(" Trying to Craft: ")
                 gpu.setForeground(0xFF0000) -- Red
-                io.write(value.Delta, "\n")
+                io.write(value.Delta, " " )
+                gpu.setForeground(0xFFFFFF) -- White
+                io.write("with CPU ")
+                gpu.setForeground(0xCC24C0) -- Purple-ish
+                io.write(cpuAvailable[1], "\n")
                 gpu.setForeground(0xFFFFFF) -- White
         
         
-                table.insert(threadList, thread.create(HandleCrafting,value))
-                os.sleep(2)
+                table.insert(threadList, thread.create(HandleCrafting, value, table.remove(cpuAvailable,1) ))
+                
         
             end
             thread.waitForAll(threadList)
@@ -95,21 +107,11 @@ end
 -----------------------
 
 ----Crafting Handler----
-function HandleCrafting(entry)
+function HandleCrafting(entry, cpuName)
     
     local toCraft = entry.Delta
     local token = entry.Token
-    local noCpu = true
-    local cpuName = nil
 
-    while noCpu do
-        cpuName = GetCpu()
-        if cpuName ~= nil then
-            noCpu = false
-        end
-        os.sleep(2)
-    end
-    --print(cpuName)
     local status = token.request(toCraft, nil, cpuName)
 
     
@@ -212,9 +214,10 @@ function CreateQueque(list)
 end
 -----------------------------------------------
 
------Function That returns first free Cpu or nil-----
+-----Function That returns first free Cpu or empty table-----
 function GetCpu()
     local cpuInNetwork = mainSystem.getCpus() --Gets CPUs from main network
+    local placeholder = {}
 
     for key, value in pairs(cpuInNetwork) do 
         if key ~= 'n' then
@@ -222,14 +225,15 @@ function GetCpu()
             for _, cpuName in pairs(cpus) do
                 
                 if (value["name"] == cpuName) and (value["busy"] == false) then
-                    return value["name"]
+                    table.insert(placeholder, value["name"])
                 end
             
             end
 
-        else return nil end
+        end
                   
     end
+    return placeholder
 end
 -----------------------------------------------------
 
