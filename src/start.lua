@@ -3,11 +3,9 @@
 -----Constants------
 
 --Adress of ME network with items to auto-refill
---local dummySystemAdress = "99a69246-9fcd-42c1-8908-f60abdae86b4"
 local dummySystemAdress = "46f8a829-3871-4f16-a0f1-298a286e42ad"
 
 --Adress of main ME network with crafting capabilities
---local mainSystemAdress = "afab95b0-7e40-4c55-9c08-5724d436c006"
 local mainSystemAdress = "0b061661-126e-452a-aee6-cd96a5725d3b"
 
 --Constant that defines in % how many items will be requested at once 
